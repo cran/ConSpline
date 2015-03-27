@@ -1,0 +1,10 @@
+d3140be6f3ccf9263e07f39aa187f8b1 *DESCRIPTION
+ae47d352eca42f7e11650026eb0bd1c9 *NAMESPACE
+45741c2a86f8758a923ba2f64c6d7ee6 *R/concave.R
+63237fa1051065c99ccaa2102fbfd257 *R/conspline.R
+2d2ae69549834e301d93fe6846bbe1e2 *R/convex.R
+dba50e428dbef17d89d2ed75c9573269 *R/monincr.R
+189c3da486c9fdda316c42eaa661ab46 *data/WhiteSpruce.rda
+e378fcdd8902bc7286d02f5ca3939d54 *man/ConSpline-package.Rd
+8974aefd9978b659ede5c3e976572d32 *man/WhiteSpruce.Rd
+e4cbc97df92c58e019bd1b0416e3b9aa *man/conspline.Rd
