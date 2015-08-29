@@ -1,5 +1,5 @@
 conspline <-
-function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
+function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=1.2,nsim=10000){
 	n=length(y)
 	if(c>2){c=2};if(c<1){c=1}
 	if(n<10){print("ERROR: must have at least 10 observations")}
@@ -18,6 +18,7 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
 	}else{
 		zmat=matrix(one,ncol=1);k=1
 	}
+	add=3; if(type>2){add=4}
 	if(length(knots)>1){
 		if(min(knots)<=min(x)&max(knots)>=max(x)){
 			t=knots
@@ -25,13 +26,13 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
 		else{
 			br=c(10,25,100,200,400,1000,1e10)
 			obs=1:7
-			nk=min(obs[n<=br])+2
+			nk=min(obs[n<=br])+add
 			t=0:(nk-1)/(nk-1)*(max(x)-min(x))+min(x)
 		}
 	}else{
 		br=c(10,25,100,200,400,1000,1e10)
 		obs=1:7
-		nk=min(obs[n<=br])+2
+		nk=min(obs[n<=br])+add
 		t=0:(nk-1)/(nk-1)*(max(x)-min(x))+min(x)
 	}
 	if(type==1){
@@ -92,17 +93,20 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
 		ztr=zmat;dtr=delta;ytr=y
 	}
 	ans=coneB(ytr,dtr,ztr)
-	sighat=sum((ytr-ans$yhat)^2)/(n-c*ans$df)
-	xmat=cbind(t(dtr),ztr)
-	xpxinv=solve(t(xmat)%*%xmat)
-	if(k==1){
-		sez=xpxinv[(m+1):(m+k),(m+1):(m+k)]*sighat
-	}else{
-		sez=diag(xpxinv[(m+1):(m+k),(m+1):(m+k)])*sighat
+	dfuse=min(c*ans$df,m+k)
+	sighat=sum((ytr-ans$yhat)^2)/(n-dfuse)
+	if(k>1){
+		use=abs(ans$coef)>1e-8
+		if(k>1){use[2:k]=FALSE}
+		xj=cbind(ztr,t(dtr));xj=xj[,use]
+		pj=xj%*%solve(t(xj)%*%xj)%*%t(xj)
+		zm=ztr[,2:k]
+		ppinv=solve(t(zm)%*%(diag(one)-pj)%*%zm)	
+		zcoef=ans$coef[2:k]
+		sez=sqrt(diag(ppinv)*sighat)
+		tz=zcoef/sez
+		pz=2*(1-pt(abs(tz),n-dfuse))
 	}
-	zcoef=ans$coef[1:k]
-	tz=zcoef/sqrt(sez)
-	pz=2*(1-pt(abs(tz),n-c*ans$df))
 	if(length(wt)>1){
 		muhat=ans$yhat/sqrt(wt)
 	}else{
@@ -118,7 +122,7 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
 		k0=dim(zmat)[2]
 		for(isim in 1:nsim){
 			ysim=rnorm(n)
-			asim=coneB(ysim,delta,zmat)
+			asim=coneB(ysim,dtr,ztr)
 			df0=asim$df-k0
 			mdist[df0+1]=mdist[df0+1]+1
 		}
@@ -132,22 +136,29 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=2,nsim=10000){
 	if(incr==0&decr==0){
 		fhat=t(delta)%*%ans$coef[(k+2):(k+1+m)]
 		fhat=fhat+x*ans$coef[k+1]
+		fhat=fhat+ans$coef[1]
 		fslope=t(slopes)%*%ans$coef[(k+2):(k+1+m)]
 		fslope=fslope+ans$coef[k+1]
 	}else{
 		fhat=t(delta)%*%ans$coef[(k+1):(k+m)]
+		fhat=fhat+ans$coef[1]
 		fslope=t(slopes)%*%ans$coef[(k+1):(k+m)]
 	}
 	cans=new.env()	
 	cans$sighat=sighat
-	cans$zhmat=xpxinv[(m+1):(m+k),(m+1):(m+k)]
-	cans$zcoef=zcoef
-	cans$sez=sqrt(sez)
+	if(k>1){
+		cans$zhmat=ppinv	
+		cans$zcoef=zcoef
+		cans$sez=sqrt(sez)
+		cans$pvalz=pz
+	}
 	if(test){cans$pvalx=pval }
-	cans$pvalz=pz
 	cans$muhat=muhat
 	cans$fhat=fhat
 	cans$fslope=fslope
 	cans$knots=t
+	cans$df=dfuse
+	wp1=sum(ytr*ztr[,1])/sum(ztr[,1]^2)*ztr[,1]
+	cans$rsq=1-sum((ytr-ans$yhat)^2)/sum((ytr-wp1)^2)
 	cans
 }
