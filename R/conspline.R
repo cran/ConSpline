@@ -92,7 +92,7 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=1.2,nsim=10000){
 	}else{
 		ztr=zmat;dtr=delta;ytr=y
 	}
-	ans=coneB(ytr,dtr,ztr)
+	ans=coneB(ytr,t(dtr),ztr)
 	dfuse=min(c*ans$df,m+k)
 	sighat=sum((ytr-ans$yhat)^2)/(n-dfuse)
 	if(k>1){
@@ -122,7 +122,7 @@ function(y,x,type,zmat=0,wt=0,knots=0,test=FALSE,c=1.2,nsim=10000){
 		k0=dim(zmat)[2]
 		for(isim in 1:nsim){
 			ysim=rnorm(n)
-			asim=coneB(ysim,dtr,ztr)
+			asim=coneB(ysim,t(dtr),ztr)
 			df0=asim$df-k0
 			mdist[df0+1]=mdist[df0+1]+1
 		}
